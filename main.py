@@ -5,7 +5,11 @@ import uuid
 import torch
 import numpy as np
 import json
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+import os
 
+#YOUR KEY HERE
 
 def chunking(directory_path, tokenizer, chunk_size, para_seperator=" /n /n", separator=" "):
 
@@ -153,6 +157,27 @@ def retrieve_text(top_results, document_data):
     related_text = document_data[doc_id][chunk_id]
     return related_text
 
+def generate_llm_response(openai_model, query, relavent_text):
+    template = """
+    You are an intelligent search engine. You will be provided with some retrieved context, as well as the users query.
+
+    Your job is to understand the request, and answer based on the retrieved context.
+    Here is context:
+
+    <context>
+    {context}
+    </context>
+
+    Question: {question}
+    """
+    prompt = ChatPromptTemplate.from_template(template=template)
+
+    chain = prompt | openai_model
+    response=chain.invoke({"context":relavent_text["text"],"question":query})
+    return response
+
+
+
 if __name__ == "__main__":
     directory_path = "documents"
     model_name = "BAAI/bge-small-en-v1.5"
@@ -162,6 +187,8 @@ if __name__ == "__main__":
     para_seperator=" /n /n"
     separator=" "
     top_k = 2
+    openai_model = ChatOpenAI(model="gpt-3.5-turbo")
+
     
     #creating document store with chunk id, doc_id, text
     documents = chunking(directory_path, tokenizer, chunk_size, para_seperator, separator)
@@ -186,9 +213,15 @@ if __name__ == "__main__":
     relavent_text = retrieve_text(top_results, document_data)
 
     print(relavent_text)
+    #print(relavent_text["text"])
+
+   #Uncomment if you have api key 
+    # response = generate_llm_response(openai_model, query, relavent_text)
+    # print(response)
 
 
-    
+
+
 
 
 
